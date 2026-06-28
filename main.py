@@ -4,6 +4,22 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
+from threading import Thread  # Render'ın kapanmasını önlemek için gerekli ekleme
+from flask import Flask        # Render'ın port kontrolünü geçmek için gerekli ekleme
+
+# =========================
+# WEB SUNUCU (RENDER KEEP-ALIVE)
+# =========================
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot aktif ve çalışıyor!"
+
+def run_flask():
+    # Render'ın atadığı dinamik portu çeker, yerelde ise 5000 portunu kullanır
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
 # =========================
 # AYARLAR
@@ -226,3 +242,19 @@ async def on_ready():
     print(f"{bot.user} (Bot 1) aktif.")
     print("UNFORTUNE EVENT BOT HAZIR")
     print("=" * 50)
+
+# =========================
+# BAŞLATMA ALANI
+# =========================
+if __name__ == "__main__":
+    # 1. Flask web sunucusunu arka planda (Thread) başlatıyoruz
+    flask_thread = Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    
+    # 2. Discord botunu ana süreçte başlatıyoruz
+    # NOT: Render Panelinde 'Environment' sekmesine gidip 'DISCORD_TOKEN' adında bir değişken eklemelisin.
+    # Eğer eklemek istemiyorsan aşağıdaki satırı bot.run("SENIN_TOKENIN") şeklinde değiştirebilirsin.
+TOKEN = os.environ.get("DISCORD_TOKEN")
+if TOKEN:
+    bot.run(TOKEN)
