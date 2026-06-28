@@ -16,11 +16,6 @@ app = Flask(__name__)
 def home():
     return "Bot aktif ve çalışıyor!"
 
-def run_flask():
-    # Render'ın atadığı dinamik portu çeker, yerelde ise 5000 portunu kullanır
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
 # =========================
 # AYARLAR
 # =========================
@@ -247,14 +242,22 @@ async def on_ready():
 # BAŞLATMA ALANI
 # =========================
 if __name__ == "__main__":
-    # 1. Flask web sunucusunu arka planda (Thread) başlatıyoruz
-    flask_thread = Thread(target=run_flask)
+    # 1. Önce Flask sunucusunu arka planda ayağa kaldırıyoruz
+    port = int(os.environ.get("PORT", 5000))
+    flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False))
     flask_thread.daemon = True
     flask_thread.start()
     
-    # 2. Discord botunu ana süreçte başlatıyoruz
-    # NOT: Render Panelinde 'Environment' sekmesine gidip 'DISCORD_TOKEN' adında bir değişken eklemelisin.
-    # Eğer eklemek istemiyorsan aşağıdaki satırı bot.run("SENIN_TOKENIN") şeklinde değiştirebilirsin.
-TOKEN = os.environ.get("DISCORD_TOKEN")
-if TOKEN:
-    bot.run(TOKEN)
+    print("=" * 50)
+    print(f"WEB SERVER AKTİF: Port {port} dinleniyor...") 
+    print("=" * 50)
+
+    # 2. Şimdi Discord botunu ana süreçte başlatıyoruz
+    TOKEN = os.environ.get("DISCORD_TOKEN")
+    if TOKEN:
+        try:
+            bot.run(TOKEN)
+        except Exception as e:
+            print(f"BOT BAŞLATMA HATASI: {e}")
+    else:
+        print("HATA: DISCORD_TOKEN ortam değişkeni bulunamadı! Lütfen Render paneline ekleyin.")
